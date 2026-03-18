@@ -22,7 +22,8 @@ app = FastAPI(title="Sales Dashboard API", version="3.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", os.environ.get("FRONTEND_URL", "")],
-    allow_methods=["GET", "POST"],
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

@@ -226,3 +226,31 @@ def health():
         return {"status": "ok", "database": "connected"}
     except Exception as e:
         return {"status": "error", "database": str(e)}
+
+@app.get("/api/top-products")
+def get_top_products(
+    limit: int = Query(10, ge=1, le=50),
+    user = Depends(get_current_user)
+):
+    conn = None
+    try:
+        conn = get_conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT
+                product                              AS name,
+                category,
+                ROUND(SUM(amount)::numeric, 2)       AS revenue,
+                COUNT(DISTINCT order_id)             AS orders,
+                ROUND(SUM(amount) * 100.0 /
+                    SUM(SUM(amount)) OVER ()
+                , 1)                                 AS pct
+            FROM sales
+            GROUP BY product, category
+            ORDER BY revenue DESC
+            LIMIT %s
+        """, (limit,))
+        return {"products": [dict(r) for r in cur.fetchall()]}
+    finally:
+        if conn:
+            conn.close()

@@ -29,13 +29,12 @@ app.add_middleware(
 
 
 # ── 2. DATABASE ───────────────────────────────────────────────────────────────
-DB_CONFIG = {
-    "host":     "localhost",
-    "database": "sales_dashboard",
-    "user":     "dashboard_user",
-    "password": "dashpass123",
-    "port":     5432,
-}
+import os
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
 
 def get_conn():
     return psycopg2.connect(**DB_CONFIG)

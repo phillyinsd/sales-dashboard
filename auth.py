@@ -14,7 +14,8 @@ from fastapi.security import OAuth2PasswordBearer
 
 # ── Config ────────────────────────────────────────────────────────────────────
 # In production these move to environment variables (Module 7)
-SECRET_KEY  = "changeme-use-a-long-random-string-in-production"
+import os
+SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-dev-secret")
 ALGORITHM   = "HS256"
 TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 hours
 

@@ -217,16 +217,6 @@ def get_by_region(user = Depends(get_current_user)):
             conn.close()
 
 
-# ── 7. HEALTH CHECK ───────────────────────────────────────────────────────────
-@app.get("/health")
-def health():
-    try:
-        conn = get_conn()
-        conn.close()
-        return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        return {"status": "error", "database": str(e)}
-
 @app.get("/api/top-products")
 def get_top_products(
     limit: int = Query(10, ge=1, le=50),
@@ -254,3 +244,15 @@ def get_top_products(
     finally:
         if conn:
             conn.close()
+
+# ── 7. HEALTH CHECK ───────────────────────────────────────────────────────────
+@app.get("/health")
+def health():
+    try:
+        conn = get_conn()
+        conn.close()
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        return {"status": "error", "database": str(e)}
+
+

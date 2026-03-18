@@ -1,11 +1,10 @@
 """
-Dashboard Backend — Module 6
+Dashboard Backend — Module 7
 ==============================
-Added JWT authentication.
-All /api/* routes now require a valid Bearer token.
-New endpoints: POST /auth/login, POST /auth/register
+Uses environment variables for database connection and secret key.
 """
 
+import os
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,22 +21,17 @@ app = FastAPI(title="Sales Dashboard API", version="3.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", os.environ.get("FRONTEND_URL", "")],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 
 # ── 2. DATABASE ───────────────────────────────────────────────────────────────
-import os
-
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
-
-def get_conn():
-    return psycopg2.connect(**DB_CONFIG)
 
 
 # ── 3. MODELS ─────────────────────────────────────────────────────────────────
@@ -79,13 +73,8 @@ def build_where(start_date, end_date, region):
 
 
 # ── 5. AUTH ENDPOINTS ─────────────────────────────────────────────────────────
-
 @app.post("/auth/register")
 def register(body: RegisterRequest):
-    """
-    Creates a new user with a hashed password.
-    In a real app you'd add email validation and rate limiting.
-    """
     conn = None
     try:
         conn = get_conn()
@@ -107,20 +96,14 @@ def register(body: RegisterRequest):
 
 @app.post("/auth/login")
 def login(body: LoginRequest):
-    """
-    Verifies credentials and returns a JWT token.
-    The React app stores this token and sends it with every subsequent request.
-    """
     conn = None
     try:
         conn = get_conn()
         cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT * FROM users WHERE email = %s", (body.email,))
         user = cur.fetchone()
-
         if not user or not verify_password(body.password, user["password"]):
             raise HTTPException(status_code=401, detail="Invalid email or password")
-
         token = create_token({"sub": user["email"]})
         return {"access_token": token, "token_type": "bearer"}
     finally:
@@ -129,15 +112,12 @@ def login(body: LoginRequest):
 
 
 # ── 6. PROTECTED DASHBOARD ENDPOINTS ─────────────────────────────────────────
-# Note: user = Depends(get_current_user) is the only addition needed to
-# protect a route — FastAPI handles all the token extraction automatically.
-
 @app.get("/api/dashboard", response_model=DashboardResponse)
 def get_dashboard(
     start_date: Optional[str] = Query(None),
     end_date:   Optional[str] = Query(None),
     region:     Optional[str] = Query(None),
-    user = Depends(get_current_user),          # ← protects this route
+    user = Depends(get_current_user),
 ):
     where, params = build_where(start_date, end_date, region)
     conn = None
